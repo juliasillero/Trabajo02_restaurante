@@ -1,0 +1,9 @@
+---
+title: "Elección del mejor restaurante para una cena con amigos"
+author: "Julia Sillero"
+format: html
+---
+
+# Introducción
+
+(Lo completaremos luego)
