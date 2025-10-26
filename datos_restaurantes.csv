@@ -1,5 +1,5 @@
 ﻿RESTAURANTE;PRECIO;VALORACION;VARIEDAD;RUIDO;TIEMPO;RESERVA;APARCAMIENTO
-La Boba;;;;;;;
-Bodeguita San Sebastian;;;;;;;
-Azusal;;;;;;;
-Bar La Via;;;;;;;
+La Boba;10;4,4;2;3;10;2;1
+Bodeguita San Sebastian;15;4,5;3;3;20;5;3
+Azusal;25;4,6;1;5;30;3;5
+Bar La Via;12,5;4,5;5;1;20;1;5
