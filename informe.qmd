@@ -1,18 +1,25 @@
 ---
 title: "Elección del mejor restaurante para una cena con amigos"
-author: "Julia Sillero Mancera"
+author: "Julia Sillero"
 date: today
 lang: es-ES
 format:
   pdf:
     pdf-engine: xelatex
-    toc: false           
+    toc: false
     number-sections: false
     geometry:
       - margin=2.5cm
-    code-line-numbers: true   
-    code-fold: false          
-    df-print: default         
+    code-line-numbers: true
+    code-fold: false
+    df-print: default
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: false
+    code-fold: false
+    df-print: paged
+    theme: flatly       
 execute:
   echo: true
   warning: true
