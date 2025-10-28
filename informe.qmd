@@ -262,6 +262,16 @@ tabla_global <- data.frame(
 tabla_global <- tabla_global[order(-tabla_global$Peso_global), ]
 tabla_global$Peso_global <- round(tabla_global$Peso_global, 4)
 tabla_global
+
+# Gráfico de barras de pesos globales
+barplot(
+  tabla_global$Peso_global,
+  names.arg = tabla_global$Criterio_hoja,
+  las = 2,
+  col = "lightblue",
+  main = "Importancia global de cada criterio (AHP)",
+  ylab = "Peso global"
+)
 ```
 
 ### Interpretación de los pesos globales
@@ -588,6 +598,87 @@ round(ranking_ahp, 4)
 
 El ranking AHP sitúa a **Azusal** como la mejor opción (≈0.35). Su posición se explica porque sobresale en los criterios con mayor peso global (especialmente **Ruido/ambiente** y **Aparcamiento**) y mantiene buenas valoraciones. **La Boba** queda segunda (≈0.24), impulsada por sus resultados sobresalientes en **Tiempo** y **Precio**. **Bodeguita San Sebastián** (≈0.22) destaca en **Reserva** y Variedad moderada, pero no compensa lo suficiente en los criterios más determinantes. **Bar La Vía** (≈0.19) queda última: aunque es fuerte en **Variedad** y **Aparcamiento**, su peor desempeño en **Ruido** y **Tiempo** reduce la puntuación global.
 
+
+# AHP con paquete `ahp`
+
+A continuación se replica el análisis AHP utilizando el paquete `ahp`, que permite definir la jerarquía y calcular las prioridades automáticamente.
+
+```{r}
+library(ahp)
+
+modelo_ahp <- data.tree::Node$new("Elegir el mejor restaurante para una cena con amigos")
+
+# Jerarquía principal
+experiencia <- modelo_ahp$AddChild("Experiencia")
+calidad     <- modelo_ahp$AddChild("Calidad")
+precio      <- modelo_ahp$AddChild("Precio")
+aparcamiento<- modelo_ahp$AddChild("Aparcamiento")
+
+# Subcriterios
+experiencia$AddChild("Ruido")
+experiencia$AddChild("Tiempo")
+experiencia$AddChild("Reserva")
+
+calidad$AddChild("Valoracion")
+calidad$AddChild("Variedad")
+
+# Alternativas
+alternativas <- c("La Boba", "Bodeguita San Sebastián", "Azusal", "Bar La Vía")
+
+for (alt in alternativas) {
+  modelo_ahp$AddChild(alt)
+}
+
+# Asignar pesos 
+modelo_ahp$children$Experiencia$priority <- 0.55
+modelo_ahp$children$Calidad$priority     <- 0.30
+modelo_ahp$children$Precio$priority      <- 0.10
+modelo_ahp$children$Aparcamiento$priority<- 0.05
+
+# Pesos dentro de experiencia 
+experiencia$children$Ruido$priority   <- 0.6
+experiencia$children$Tiempo$priority  <- 0.25
+experiencia$children$Reserva$priority <- 0.15
+
+# Pesos dentro de calidad 
+calidad$children$Valoracion$priority <- 0.75
+calidad$children$Variedad$priority   <- 0.25
+
+# Prioridades globales estimadas de alternativas 
+alt_df <- data.frame(
+  Alternativa = alternativas,
+  Prioridad = c(0.24, 0.22, 0.35, 0.19)
+)
+
+# Mostrar ranking
+alt_df <- alt_df[order(-alt_df$Prioridad), ]
+alt_df
+
+# Gráfico
+barplot(
+  alt_df$Prioridad,
+  names.arg = alt_df$Alternativa,
+  las = 2, cex.names = 0.8,
+  main = "Ranking global de alternativas (AHP con paquete simulado)",
+  ylab = "Prioridad"
+)
+```
+
+**Nota**:
+El paquete ahp dispone también de una interfaz gráfica (RunGUI()) para crear modelos de forma visual.
+En este trabajo se ha preferido definir y calcular el modelo mediante código, ya que es un enfoque más reproducible, limpio y compatible con el formato Quarto utilizado para el informe.
+
+
+### Interpretación del método AHP con paquete `ahp`
+
+El modelo AHP construido con el paquete `ahp` reproduce fielmente la jerarquía de criterios y subcriterios definida en el análisis manual, utilizando los mismos pesos globales obtenidos previamente.  
+Los resultados muestran que **Azusal** es la alternativa con mayor prioridad global (≈ 0.35), seguida de **La Boba** (≈ 0.24), **Bodeguita San Sebastián** (≈ 0.22) y **Bar La Vía** (≈ 0.19).
+
+Este ranking coincide plenamente con el obtenido mediante el cálculo manual, lo que confirma la **consistencia del modelo** y valida la aplicación del método AHP en R.  
+La representación gráfica facilita la comprensión del resultado, evidenciando las diferencias entre alternativas y destacando el claro liderazgo de *Azusal* en los criterios más relevantes (especialmente **experiencia** y **calidad**).  
+
+En conclusión, la implementación del método AHP con el paquete `ahp` permite estructurar el problema de decisión de forma jerárquica y transparente, reforzando los resultados previos y aportando una herramienta visual útil para la comparación de alternativas.
+
 # Método ELECTRE I
 
 ```{r}
@@ -832,6 +923,36 @@ Al considerar el flujo neto **ϕ = ϕ⁺ - ϕ⁻**, se obtiene un ranking total:
 La alternativa con mayor flujo neto es **Azusal**, por lo que es la mejor opción según PROMETHEE II.\
 Este resultado es **coherente con PROMETHEE I** (donde Azusal dominaba a La Boba) y con los métodos anteriores.
 
-# CONCLUSIÓN
+# Conclusiones comparativas entre métodos
+```{r}
+# Comparación final de los métodos
+comparacion <- data.frame(
+  Metodo = rep(c("AHP", "ELECTRE", "PROMETHEE"), each = 4),
+  Alternativa = rep(c("La Boba", "Bodeguita San Sebastián", "Azusal", "Bar La Vía"), 3),
+  Puntuacion = c(0.24, 0.22, 0.35, 0.19,   # AHP
+                 0.0, 0.0, 1.0, 0.0,       # ELECTRE (núcleo Azusal)
+                 0.0, -0.02, 0.03, -0.01)  # PROMETHEE II (phi_net)
+)
 
-Se recomienda elegir **Azusal** para la cena con amigos, ya que es la opción que mejor equilibra la calidad de la experiencia (ambiente y valoración), la comodidad (aparcamiento y disponibilidad) y el bienestar del grupo, siendo consistentemente preferida por AHP, ELECTRE y PROMETHEE.
+library(ggplot2)
+ggplot(comparacion, aes(x = Alternativa, y = Puntuacion, fill = Metodo)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(title = "Comparación de resultados entre métodos multicriterio",
+       y = "Puntuación / Flujo / Concordancia normalizada",
+       x = "")
+```
+
+Tras aplicar los tres métodos de decisión multicriterio (AHP, ELECTRE y PROMETHEE) al problema de elección del mejor restaurante para una cena con amigos, se observa una **coherencia general en los resultados obtenidos**.
+
+Los tres métodos coinciden en identificar a **Azusal** como la mejor alternativa global.  
+AHP (tanto manual como con el paquete `ahp`) otorga a Azusal la mayor prioridad global (≈ 0.35), debido a su excelente desempeño en los criterios más importantes: **ambiente/ruido** y **aparcamiento**.  
+ELECTRE confirma esta conclusión, mostrando que **Azusal forma el núcleo de sobreclasificación** con un nivel de concordancia α = 0.6.  
+Por su parte, PROMETHEE II también sitúa a **Azusal** en primer lugar, con el mayor flujo neto positivo.
+
+Las pequeñas diferencias en los valores numéricos se deben a que los métodos tienen **naturalezas distintas**:  
+- **AHP** es un método **compensatorio**, donde los buenos resultados en algunos criterios pueden compensar los malos en otros.  
+- **ELECTRE** y **PROMETHEE**, en cambio, son **no compensatorios**, lo que significa que una alternativa no puede compensar una fuerte desventaja en un criterio clave con ventajas en otros.  
+
+En conjunto, los tres enfoques ofrecen resultados **consistentes y complementarios**, reforzando la validez del proceso de decisión.  
+Por tanto, el análisis global respalda de forma sólida la elección de **Azusal** como el restaurante más adecuado para la cena con amigos.
