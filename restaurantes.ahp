@@ -1,0 +1,107 @@
+Version: 2
+
+Goal:
+  name: Elegir el mejor restaurante
+  children:
+    Experiencia:
+      children:
+        Ruido:
+        Tiempo:
+        Reserva:
+    Calidad:
+      children:
+        Valoracion:
+        Variedad:
+    Precio:
+    Aparcamiento:
+  alternatives:
+    La Boba:
+    Bodeguita San Sebastián:
+    Azusal:
+    Bar La Vía:
+
+preferences:
+
+  Goal:
+    pairwise:
+      - [Experiencia, Calidad, 3]
+      - [Experiencia, Precio, 5]
+      - [Experiencia, Aparcamiento, 7]
+      - [Calidad, Precio, 5]
+      - [Calidad, Aparcamiento, 5]
+      - [Precio, Aparcamiento, 3]
+
+  Experiencia:
+    pairwise:
+      - [Ruido, Tiempo, 5]
+      - [Ruido, Reserva, 3]
+      - [Tiempo, Reserva, 1/2]
+
+  Calidad:
+    pairwise:
+      - [Valoracion, Variedad, 5]
+
+  # --- Alternativas por criterio hoja ---
+
+  Ruido:
+    pairwise:
+      - [Azusal, Bar La Vía, 7]
+      - [Azusal, La Boba, 5]
+      - [Azusal, Bodeguita San Sebastián, 5]
+      - [La Boba, Bar La Vía, 3]
+      - [Bodeguita San Sebastián, Bar La Vía, 3]
+      - [La Boba, Bodeguita San Sebastián, 1]
+
+  Tiempo:
+    pairwise:
+      - [La Boba, Bodeguita San Sebastián, 3]
+      - [La Boba, Bar La Vía, 3]
+      - [La Boba, Azusal, 5]
+      - [Bodeguita San Sebastián, Azusal, 3]
+      - [Bar La Vía, Azusal, 3]
+      - [Bodeguita San Sebastián, Bar La Vía, 1]
+
+  Reserva:
+    pairwise:
+      - [Bodeguita San Sebastián, Azusal, 3]
+      - [Bodeguita San Sebastián, La Boba, 5]
+      - [Bodeguita San Sebastián, Bar La Vía, 7]
+      - [Azusal, La Boba, 2]
+      - [La Boba, Bar La Vía, 3]
+      - [Azusal, Bar La Vía, 5]
+
+  Valoracion:
+    pairwise:
+      - [Azusal, Bodeguita San Sebastián, 2]
+      - [Azusal, La Boba, 3]
+      - [Bodeguita San Sebastián, La Boba, 2]
+      - [Bodeguita San Sebastián, Bar La Vía, 1]
+      - [Azusal, Bar La Vía, 2]
+      - [Bar La Vía, La Boba, 2]
+
+  Variedad:
+    pairwise:
+      - [Bar La Vía, Bodeguita San Sebastián, 3]
+      - [Bar La Vía, La Boba, 5]
+      - [Bar La Vía, Azusal, 7]
+      - [Bodeguita San Sebastián, La Boba, 3]
+      - [La Boba, Azusal, 3]
+      - [Bodeguita San Sebastián, Azusal, 5]
+
+  Precio:
+    pairwise:
+      - [La Boba, Bodeguita San Sebastián, 3]
+      - [La Boba, Bar La Vía, 2]
+      - [La Boba, Azusal, 5]
+      - [Bar La Vía, Bodeguita San Sebastián, 2]
+      - [Bodeguita San Sebastián, Azusal, 3]
+      - [Bar La Vía, Azusal, 3]
+
+  Aparcamiento:
+    pairwise:
+      - [Azusal, La Boba, 5]
+      - [Bar La Vía, La Boba, 5]
+      - [Bodeguita San Sebastián, La Boba, 3]
+      - [Azusal, Bodeguita San Sebastián, 3]
+      - [Bar La Vía, Bodeguita San Sebastián, 3]
+      - [Azusal, Bar La Vía, 1]
