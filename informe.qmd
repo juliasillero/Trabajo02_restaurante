@@ -4,6 +4,867 @@ author: "Julia Sillero"
 format: html
 ---
 
-# Introducción
+# Introducción y objetivos
 
-(Lo completaremos luego)
+**Objetivo:** elegir el mejor restaurante para una cena con amigos, empleando métodos de Decisión Multicriterio (AHP, ELECTRE y PROMETHEE).
+
+**Alternativas consideradas:**
+- La Boba
+- Bodeguita San Sebastián
+- Azusal
+- Bar La Vía
+
+**Criterios y subcriterios utilizados (estructura jerárquica):**
+
+- **Precio** *(minimizar)*  
+  - Medición: ticket medio en euros por persona.
+
+- **Calidad de la comida** *(maximizar)*  
+  - **Valoración media** en Google/Tripadvisor *(escala 0–5)*  
+  - **Variedad del menú** *(escala 1–5)*  
+    - 1 = menú muy limitado  
+    - 3 = variedad moderada  
+    - 5 = oferta amplia y diversa  
+
+- **Experiencia en el local** *(maximizar)*  
+  - **Ruido/ambiente** *(escala 1–5, donde 1 = muy ruidoso y 5 = ambiente agradable/tranquilo)*  
+  - **Tiempo de servicio** *(minimizar, minutos hasta recibir plato principal)*  
+  - **Facilidad de reserva para grupo** *(escala 1–5, donde 1 = difícil y 5 = muy fácil)*  
+
+- **Accesibilidad para aparcar** *(maximizar)*  
+  - Escala 1–5  
+    - 1 = muy difícil aparcar en la zona  
+    - 3 = se puede aparcar pero con espera  
+    - 5 = muy fácil aparcar cerca del local
+
+Este conjunto de criterios recoge tanto aspectos económicos (precio), como gastronómicos (calidad y variedad), de experiencia durante la cena (ambiente, tiempo de espera y reservas) y logísticos (accesibilidad en coche). Por tanto, resulta adecuado para una decisión grupal realista sobre dónde cenar.
+
+# Datos y criterios
+```{r}
+# (1) Defino la tabla con los valores usados en el trabajo
+df <- data.frame(
+  Restaurante  = c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía"),
+  Precio       = c(10, 15, 25, 12.5),  # €/persona 
+  Valoracion   = c(4.4, 4.5, 4.6, 4.5),# 0–5 
+  Variedad     = c(2, 3, 1, 5),        # 1–5 
+  Ruido        = c(3, 3, 5, 1),        # 1–5 
+  Tiempo       = c(10, 20, 30, 20),    # min 
+  Reserva      = c(2, 5, 3, 1),        # 1–5 
+  Aparcamiento = c(1, 3, 5, 5)         # 1–5 
+)
+
+# (2) Escribo el CSV para usarlo en ELECTRE y PROMETHEE
+write.csv(df, "datos_restaurantes.csv", row.names = FALSE, fileEncoding = "UTF-8")
+
+# (3) Lo leo y muestro 
+datos <- read.csv("datos_restaurantes.csv", stringsAsFactors = FALSE)
+datos
+```
+
+**Escalas y sentido de los criterios.**  
+Se emplean los siguientes criterios y escalas: Precio (€) y Tiempo (min) son criterios de **coste** (menos es mejor). Valoración (0–5), Variedad (1–5), Ruido/ambiente (1–5, donde valores altos significan local más **tranquilo**), Reserva (1–5) y Aparcamiento (1–5) son criterios de **beneficio** (más es mejor).  
+Los datos proceden de estimaciones razonables (precios medios y tiempos habituales) y de valoraciones públicas (Google/Maps), ajustadas a una escala común para su comparación multicriterio.
+
+# AHP: Análisis Jerárquico del Proceso
+
+La estructura jerárquica utilizada es la siguiente:
+
+- **Objetivo:** Elegir el mejor restaurante para una cena con amigos.
+- **Criterios principales:**
+  1. **Precio** (minimizar)
+  2. **Calidad**
+     - Valoración media (escala 0–5)
+     - Variedad del menú (escala 1–5)
+  3. **Experiencia en el local**
+     - Ruido/ambiente (escala 1–5)
+     - Tiempo de servicio (minutos)
+     - Facilidad de reserva para grupos (escala 1–5)
+  4. **Aparcamiento** (escala 1–5, cuanto mayor, más fácil)
+  
+  
+# Matriz de comparación por pares - Criterios principales
+```{r}
+criterios <- matrix(c(
+  1,   3,   5,   7,
+  1/3, 1,   5,   5,
+  1/5, 1/5, 1,   3,
+  1/7, 1/5, 1/3, 1
+), nrow = 4, byrow = TRUE)
+
+rownames(criterios) <- c("Experiencia", "Calidad", "Precio", "Aparcamiento")
+colnames(criterios) <- c("Experiencia", "Calidad", "Precio", "Aparcamiento")
+
+criterios
+
+
+eig <- eigen(criterios)
+vec <- Re(eig$vectors[,1])
+pesos <- vec / sum(vec)
+pesos
+
+n <- nrow(criterios)
+lambda_max <- Re(eig$values[1])
+CI <- (lambda_max - n) / (n - 1)
+RI <- 0.90   # tabla de Saaty para n=4
+CR <- CI / RI
+
+CR
+```
+
+### Interpretación de la comparación de criterios
+
+Los pesos obtenidos indican que el criterio más importante para elegir el restaurante es la **Experiencia en el local** (≈55%). Esto refleja que, para el grupo, la comodidad al cenar, el ambiente y la fluidez del servicio influyen más en la satisfacción general que otros factores.
+
+En segundo lugar aparece la **Calidad de la comida** (≈30%), lo cual confirma que el sabor y la variedad del menú también son aspectos relevantes para la decisión.
+
+El **Precio** tiene un peso menor (≈10%), lo que sugiere que el grupo está dispuesto a pagar un poco más si el lugar ofrece una buena experiencia. Por último, la **Facilidad de aparcamiento** resulta ser el criterio menos determinante (≈5%), probablemente porque existen alternativas de transporte o porque se considera algo secundario.
+
+El **Índice de Consistencia** obtenido (CR ≈ 0.08) es **inferior al umbral recomendado de 0.10**, por lo que la matriz de comparación es **consistente** y los juicios emitidos son coherentes.
+
+# Matriz de comparación por pares - Subcriterios de Calidad
+
+```{r}
+calidad <- matrix(c(
+  1,   5,
+  1/5, 1
+), nrow = 2, byrow = TRUE)
+
+rownames(calidad) <- c("Valoración", "Variedad")
+colnames(calidad) <- c("Valoración", "Variedad")
+
+calidad
+
+eig_calidad <- eigen(calidad)
+vec_calidad <- Re(eig_calidad$vectors[,1])
+pesos_calidad <- vec_calidad / sum(vec_calidad)
+pesos_calidad
+
+n <- nrow(calidad)
+lambda_max <- Re(eig_calidad$values[1])
+CI <- (lambda_max - n) / (n - 1)
+RI <- 0.00   
+CR_calidad <- 0
+
+CR_calidad
+```
+
+
+# Matriz de comparación por pares - Subcriterios de Experiencia
+**Juicios dados:** (aplicados para construir la matriz)
+
+- Ruido vs Tiempo = 5 (el ruido se considera más importante que el tiempo de espera)
+- Ruido vs Reserva = 3 (un ambiente más agradable se valora moderadamente más que la facilidad de reserva)
+- Tiempo vs Reserva = 1/2 (es ligeramente más importante poder reservar que reducir el tiempo de servicio)
+
+```{r}
+experiencia <- matrix(c(
+  1,     5,     3,    # Fila Ruido
+  1/5,   1,     1/2,  # Fila Tiempo
+  1/3,   2,     1     # Fila Reserva (recíproco de 1/2 es 2)
+), nrow = 3, byrow = TRUE)
+
+rownames(experiencia) <- c("Ruido", "Tiempo", "Reserva")
+colnames(experiencia) <- c("Ruido", "Tiempo", "Reserva")
+
+experiencia
+
+# Pesos (autovector principal) para Experiencia
+eig_exp <- eigen(experiencia)
+vec_exp <- Re(eig_exp$vectors[,1])
+pesos_experiencia <- vec_exp / sum(vec_exp)
+pesos_experiencia
+
+# Consistency Ratio para n = 3 (RI = 0.58)
+n <- nrow(experiencia)
+lambda_max <- Re(eig_exp$values[1])
+CI <- (lambda_max - n) / (n - 1)
+RI <- 0.58
+CR_experiencia <- CI / RI
+CR_experiencia
+```
+
+
+```{r}
+# Pesos de criterios principales:
+# Experiencia, Calidad, Precio, Aparcamiento
+pesos_criterios <- c(
+  Experiencia  = pesos[1],
+  Calidad      = pesos[2],
+  Precio       = pesos[3],
+  Aparcamiento = pesos[4]
+)
+round(pesos_criterios, 4)
+```
+
+```{r}
+# Subcriterios de Calidad
+names(pesos_calidad) <- c("Valoración", "Variedad")
+round(pesos_calidad, 4)
+
+# Subcriterios de Experiencia
+names(pesos_experiencia) <- c("Ruido", "Tiempo", "Reserva")
+round(pesos_experiencia, 4)
+```
+
+```{r}
+# Globales en la rama Calidad = peso(Calidad) * pesos_calidad
+global_calidad <- pesos_criterios["Calidad"] * pesos_calidad
+
+# Globales en la rama Experiencia = peso(Experiencia) * pesos_experiencia
+global_experiencia <- pesos_criterios["Experiencia"] * pesos_experiencia
+
+# Precio y Aparcamiento son hojas directamente
+global_precio        <- pesos_criterios["Precio"]
+global_aparcamiento  <- pesos_criterios["Aparcamiento"]
+
+# Unimos todo
+pesos_globales <- c(
+  Precio       = global_precio,
+  Valoración   = global_calidad["Valoración"],
+  Variedad     = global_calidad["Variedad"],
+  Ruido        = global_experiencia["Ruido"],
+  Tiempo       = global_experiencia["Tiempo"],
+  Reserva      = global_experiencia["Reserva"],
+  Aparcamiento = global_aparcamiento
+)
+
+# Normalizamos por seguridad 
+pesos_globales <- pesos_globales / sum(pesos_globales)
+
+round(pesos_globales, 4)
+```
+
+```{r}
+tabla_global <- data.frame(
+  Criterio_hoja = names(pesos_globales),
+  Peso_global   = as.numeric(pesos_globales)
+)
+tabla_global <- tabla_global[order(-tabla_global$Peso_global), ]
+tabla_global$Peso_global <- round(tabla_global$Peso_global, 4)
+tabla_global
+```
+
+### Interpretación de los pesos globales
+
+Los pesos globales muestran la importancia final de cada criterio específico en la decisión:
+
+- **Ruido/ambiente** es el criterio más relevante (≈0.34). Esto confirma que para el grupo es fundamental que el lugar sea cómodo para conversar y disfrutar de la cena.
+- La **Valoración media** del restaurante (≈0.25) ocupa el segundo lugar, lo que indica que la opinión general de otros clientes influye notablemente en la decisión.
+- El **Tiempo de servicio** (≈0.16) también tiene un peso apreciable, mostrando preferencia por locales en los que la atención es ágil.
+- El **Precio** (≈0.10) tiene importancia, aunque menor, lo que sugiere que el grupo está dispuesto a pagar algo más si la experiencia lo merece.
+- Tanto la **Facilidad de aparcamiento** (≈0.05), la **Facilidad de reserva** (≈0.05) y la **Variedad del menú** (≈0.05) tienen pesos reducidos, lo que indica que estos factores influyen menos en la decisión final.
+
+En conjunto, el modelo AHP refleja que la elección del restaurante se basa principalmente en ofrecer una **buena experiencia social y gastronómica**, más que en factores puramente económicos o logísticos.
+
+
+# AHP sobre las alternativas para el criterio: RUIDO (menos es mejor)
+
+```{r}
+alts <- c("La Boba", "Bodeguita San Sebastián", "Azusal", "Bar La Vía")
+
+# Matriz de comparaciones (preferencia = más tranquilidad)
+# Intensidades:
+# Azusal vs Bar La Vía = 7
+# Azusal vs La Boba = 5
+# Azusal vs Bodeguita = 5
+# La Boba vs Bar La Vía = 3
+# Bodeguita vs Bar La Vía = 3
+# La Boba vs Bodeguita = 1 
+
+ruido <- matrix(1, nrow = 4, ncol = 4, dimnames = list(alts, alts))
+
+# Rellenamos por pares (y sus recíprocos)
+ruido["Azusal", "Bar La Vía"] <- 7; ruido["Bar La Vía", "Azusal"] <- 1/7
+ruido["Azusal", "La Boba"] <- 5;   ruido["La Boba", "Azusal"]     <- 1/5
+ruido["Azusal", "Bodeguita San Sebastián"] <- 5
+ruido["Bodeguita San Sebastián", "Azusal"] <- 1/5
+
+ruido["La Boba", "Bar La Vía"] <- 3; 
+ruido["Bar La Vía", "La Boba"] <- 1/3
+
+ruido["Bodeguita San Sebastián", "Bar La Vía"] <- 3
+ruido["Bar La Vía", "Bodeguita San Sebastián"] <- 1/3
+
+ruido["La Boba", "Bodeguita San Sebastián"] <- 1
+ruido["Bodeguita San Sebastián", "La Boba"] <- 1
+
+ruido
+
+# Pesos (autovector) y Consistency Ratio (CR) para la matriz de Ruido
+eig_r <- eigen(ruido)
+w_ruido <- Re(eig_r$vectors[,1]); w_ruido <- w_ruido / sum(w_ruido)
+
+n <- nrow(ruido)
+lambda_max <- Re(eig_r$values[1])
+CI <- (lambda_max - n) / (n - 1)
+RI_tab <- c(`1`=0.00, `2`=0.00, `3`=0.58, `4`=0.90, `5`=1.12,
+            `6`=1.24, `7`=1.32, `8`=1.41, `9`=1.45, `10`=1.49)
+CR_ruido <- CI / RI_tab[as.character(n)]
+
+round(w_ruido, 4)
+CR_ruido
+
+
+```
+
+### Interpretación del criterio Ruido
+
+En el criterio *Ruido/ambiente* (a menor ruido, mejor), Azusal es claramente la alternativa más preferida (≈0.63), lo que indica que es el local más adecuado para mantener una conversación cómoda durante la cena. 
+
+La Boba y Bodeguita San Sebastián presentan niveles de tranquilidad similares (≈0.15), situándose en un nivel intermedio. Por su parte, Bar La Vía es la opción menos recomendable en términos de ambiente acústico (≈0.06), probablemente porque es más concurrido o ruidoso.
+
+El índice de consistencia obtenido (CR ≈ 0.03) es **inferior a 0.10**, por lo que la matriz es **consistente** y los juicios son coherentes.
+
+
+# AHP para el criterio: VALORACIÓN (0–5, más es mejor)
+
+```{r}
+alts <- c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía")
+
+val <- c(
+  "La Boba"                 = 4.4,
+  "Bodeguita San Sebastián" = 4.5,
+  "Azusal"                  = 4.6,
+  "Bar La Vía"              = 4.5
+)
+
+# Matriz de cocientes (AHP)
+valoracion <- outer(val, val, "/")
+dimnames(valoracion) <- list(names(val), names(val))
+valoracion
+
+# Pesos (autovector) y consistencia
+eig_v <- eigen(valoracion)
+w_val <- Re(eig_v$vectors[,1]); w_val <- w_val / sum(w_val)
+
+n <- nrow(valoracion)
+lambda_max <- Re(eig_v$values[1])
+CI <- (lambda_max - n) / (n - 1)
+RI_tab <- c(`1`=0.00, `2`=0.00, `3`=0.58, `4`=0.90, `5`=1.12,
+            `6`=1.24, `7`=1.32, `8`=1.41, `9`=1.45, `10`=1.49)
+CR_val <- CI / RI_tab[as.character(n)]
+
+round(w_val, 4)
+CR_val
+
+```
+
+### Interpretación del criterio Valoración
+
+Para este criterio (0–5, a mayor mejor) se construyó una matriz de cocientes a partir de las valoraciones medias publicadas en Google Maps. Al ser una matriz perfectamente consistente, el **CR ≈ 0**, por lo que los resultados son totalmente coherentes con los datos observados.
+
+Los pesos obtenidos reflejan diferencias **muy pequeñas** entre alternativas: **Azusal** presenta la mayor preferencia (≈0.2556), seguido muy de cerca por **Bodeguita San Sebastián** (≈0.2500) y **Bar La Vía** (≈0.2500), y después **La Boba** (≈0.2444). Esta proximidad es lógica porque las puntuaciones de partida (4.6, 4.5, 4.5 y 4.4) son muy parecidas. 
+
+**Lectura práctica:** en términos de valoración agregada de clientes, *Azusal* destaca ligeramente, pero las cuatro opciones resultan bien valoradas; por sí solo, este criterio **no** discrimina de forma contundente la decisión final.
+
+
+# AHP para el criterio: TIEMPO (COSTE: menos es mejor)
+```{r}
+alts <- c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía")
+
+tiempo <- c(
+  "La Boba"                 = 10,
+  "Bodeguita San Sebastián" = 20,
+  "Azusal"                  = 30,
+  "Bar La Vía"              = 20
+)
+
+# Matriz AHP por cocientes inversos (menos es mejor)
+tiempo_mat <- outer(tiempo, tiempo, function(ti, tj) tj / ti)
+dimnames(tiempo_mat) <- list(names(tiempo), names(tiempo))
+
+tiempo_mat
+
+# Pesos (autovector principal) y Consistency Ratio
+eig_t <- eigen(tiempo_mat)
+w_tiempo <- Re(eig_t$vectors[,1])
+w_tiempo <- w_tiempo / sum(w_tiempo)
+
+n <- nrow(tiempo_mat)
+lambda_max <- Re(eig_t$values[1])
+CI <- (lambda_max - n) / (n - 1)
+RI <- 0.90   # Saaty para n = 4
+CR_tiempo <- CI / RI
+
+round(w_tiempo, 4)
+CR_tiempo
+
+```
+
+
+### Interpretación del criterio Tiempo
+
+En este criterio (menor tiempo de servicio es mejor), **La Boba** es la alternativa más ventajosa, con un peso aproximado de 0.43, lo que refleja que su rapidez de atención es notablemente superior. **Bodeguita San Sebastián** y **Bar La Vía** presentan tiempos moderados (≈0.21 cada una), siendo opciones aceptables. **Azusal** muestra el servicio más lento (≈0.14), por lo que resulta menos conveniente en este aspecto. El índice de consistencia es prácticamente cero (CR ≈ 0), lo que indica que la comparación es totalmente coherente.
+
+
+# AHP para PRECIO (€ por persona) — COSTE: menor es mejor
+```{r}
+alts <- c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía")
+
+precio <- c(
+  "La Boba"                 = 10.0,  # punto medio 5-15
+  "Bodeguita San Sebastián" = 15.0,  # punto medio 10-20
+  "Azusal"                  = 25.0,  # punto medio 20-30
+  "Bar La Vía"              = 12.5   # punto medio 10-15
+)
+
+# Matriz por cocientes inversos (menos es mejor): a_ij = precio_j / precio_i
+precio_mat <- outer(precio, precio, function(pi, pj) pj / pi)
+dimnames(precio_mat) <- list(names(precio), names(precio))
+precio_mat
+
+# Pesos (autovector) y consistencia
+eig_p <- eigen(precio_mat)
+w_precio <- Re(eig_p$vectors[,1]); w_precio <- w_precio / sum(w_precio)
+
+n <- nrow(precio_mat); lambda_max <- Re(eig_p$values[1])
+CI <- (lambda_max - n)/(n-1); RI <- 0.90; CR_precio <- CI/RI
+
+round(w_precio, 4); CR_precio
+```
+
+### Interpretación del criterio Precio
+
+Este criterio se ha tratado como un criterio de coste (menor = mejor). A partir de los precios medios estimados por persona se obtuvo una matriz perfectamente consistente (CR = 0). Los pesos reflejan que **La Boba** es la alternativa más ventajosa en cuanto a precio (≈ 0.35), seguida de **Bar La Vía** (≈ 0.28) y **Bodeguita San Sebastián** (≈ 0.23). Por su parte, **Azusal** resulta la opción menos favorable en este criterio (≈ 0.14), debido a su mayor coste medio. Por tanto, el precio distingue claramente entre las alternativas, penalizando especialmente a Azusal.
+
+
+# AHP para el criterio: RESERVA (1–5, mayor = mejor)
+
+```{r}
+alts <- c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía")
+
+reserva <- c(
+  "La Boba"                 = 2,
+  "Bodeguita San Sebastián" = 5,
+  "Azusal"                  = 3,
+  "Bar La Vía"              = 1
+)
+
+# Matriz AHP por cocientes (beneficio)
+reserva_mat <- outer(reserva, reserva, "/")
+dimnames(reserva_mat) <- list(names(reserva), names(reserva))
+
+reserva_mat
+
+# Pesos (autovector) y Consistency Ratio (CR)
+eig_res <- eigen(reserva_mat)
+w_reserva <- Re(eig_res$vectors[,1])
+w_reserva <- w_reserva / sum(w_reserva)
+
+n <- nrow(reserva_mat)
+lambda_max <- Re(eig_res$values[1])
+CI <- (lambda_max - n) / (n - 1)
+RI <- 0.90   # Saaty para n = 4
+CR_reserva <- CI / RI
+
+round(w_reserva, 4)
+CR_reserva
+```
+
+
+### Interpretación del criterio Reserva
+
+En este criterio (mayor facilidad de reserva = mejor), **Bodeguita San Sebastián** destaca claramente como la alternativa más favorable (≈0.45), siendo el local donde resulta más sencillo asegurar mesa para un grupo. A continuación aparece **Azusal** (≈0.27), seguido de **La Boba** (≈0.18). **Bar La Vía** presenta la peor disponibilidad para reservas (≈0.09). El índice de consistencia es prácticamente nulo (CR ≈ 0), lo que indica que la comparación es completamente coherente.
+
+# AHP para el criterio: VARIEDAD (1–5, mayor = mejor)
+
+```{r}
+alts <- c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía")
+
+variedad <- c(
+  "La Boba"                 = 2,
+  "Bodeguita San Sebastián" = 3,
+  "Azusal"                  = 1,
+  "Bar La Vía"              = 5
+)
+
+# Matriz AHP por cocientes (beneficio)
+variedad_mat <- outer(variedad, variedad, "/")
+dimnames(variedad_mat) <- list(names(variedad), names(variedad))
+
+variedad_mat
+
+# Pesos (autovector) y Consistency Ratio (CR)
+eig_var <- eigen(variedad_mat)
+w_variedad <- Re(eig_var$vectors[,1])
+w_variedad <- w_variedad / sum(w_variedad)
+
+n <- nrow(variedad_mat)
+lambda_max <- Re(eig_var$values[1])
+CI <- (lambda_max - n) / (n - 1)
+RI <- 0.90
+CR_variedad <- CI / RI
+
+round(w_variedad, 4)
+CR_variedad
+
+```
+
+
+### Interpretación del criterio Variedad
+
+En este criterio (mayor variedad del menú = mejor), **Bar La Vía** destaca claramente como la alternativa con la oferta más amplia y diversa (≈0.45). Le sigue **Bodeguita San Sebastián** (≈0.27), con una variedad moderada. **La Boba** presenta una carta más limitada (≈0.18), y **Azusal** es la opción con menor variedad disponible (≈0.09). La consistencia es perfecta (CR = 0), lo que confirma que la comparación está completamente alineada con los valores asignados.
+
+# AHP para el criterio: APARCAMIENTO (1–5, mayor = mejor)
+
+```{r}
+alts <- c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía")
+
+aparc <- c(
+  "La Boba"                 = 1,
+  "Bodeguita San Sebastián" = 3,
+  "Azusal"                  = 5,
+  "Bar La Vía"              = 5
+)
+
+# Matriz por cocientes (beneficio)
+aparc_mat <- outer(aparc, aparc, "/")
+dimnames(aparc_mat) <- list(names(aparc), names(aparc))
+aparc_mat
+
+# Pesos (autovector) y consistencia
+eig_a <- eigen(aparc_mat)
+w_aparc <- Re(eig_a$vectors[,1]); w_aparc <- w_aparc / sum(w_aparc)
+
+n <- nrow(aparc_mat); lambda_max <- Re(eig_a$values[1])
+CI <- (lambda_max - n)/(n-1); RI <- 0.90; CR_aparc <- CI/RI
+
+round(w_aparc, 4); CR_aparc
+
+```
+
+
+### Interpretación del criterio Aparcamiento
+
+En este criterio (mayor facilidad para aparcar = mejor), **Azusal** y **Bar La Vía** aparecen como las alternativas más favorables (≈0.36 cada una), indicando que ambos locales ofrecen buena disponibilidad de aparcamiento en la zona. **Bodeguita San Sebastián** se sitúa en una posición intermedia (≈0.21), mientras que **La Boba** presenta la peor accesibilidad en coche (≈0.07). El índice de consistencia es prácticamente nulo (CR ≈ 0), lo que confirma que la comparación es completamente coherente.
+
+# Agregación final AHP
+
+```{r}
+alts <- c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía")
+
+names(w_precio)   <- alts
+names(w_val)      <- alts
+names(w_variedad) <- alts
+names(w_ruido)    <- alts
+names(w_tiempo)   <- alts
+names(w_reserva)  <- alts
+names(w_aparc)    <- alts
+
+
+W_alt_por_criterio <- cbind(
+  Precio       = w_precio[alts],
+  Valoracion   = w_val[alts],
+  Variedad     = w_variedad[alts],
+  Ruido        = w_ruido[alts],
+  Tiempo       = w_tiempo[alts],
+  Reserva      = w_reserva[alts],
+  Aparcamiento = w_aparc[alts]
+)
+
+# Multiplicación criterio × alternativas
+score_ahp <- as.numeric(W_alt_por_criterio %*% as.numeric(pesos_globales))
+names(score_ahp) <- alts
+
+ranking_ahp <- sort(score_ahp, decreasing = TRUE)
+round(ranking_ahp, 4)
+
+```
+
+### Conclusión AHP sobre las alternativas
+
+El ranking AHP sitúa a **Azusal** como la mejor opción (≈0.35). Su posición se explica porque sobresale en los criterios con mayor peso global (especialmente **Ruido/ambiente** y **Aparcamiento**) y mantiene buenas valoraciones. **La Boba** queda segunda (≈0.24), impulsada por sus resultados sobresalientes en **Tiempo** y **Precio**. **Bodeguita San Sebastián** (≈0.22) destaca en **Reserva** y Variedad moderada, pero no compensa lo suficiente en los criterios más determinantes. **Bar La Vía** (≈0.19) queda última: aunque es fuerte en **Variedad** y **Aparcamiento**, su peor desempeño en **Ruido** y **Tiempo** lastra la puntuación global.
+
+# Método ELECTRE I
+
+```{r}
+## Paso 1: Matriz de decisión X
+alts <- c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía")
+
+X <- datos[match(alts, datos$Restaurante),
+           c("Precio","Valoracion","Variedad","Ruido","Tiempo","Reserva","Aparcamiento")]
+row.names(X) <- alts
+X
+
+```
+
+```{r}
+## Paso 2: Pesos y tipo de criterio
+
+# Pesos ELECTRE 
+w <- c(
+  Precio       = 0.20,
+  Valoracion   = 0.20,
+  Variedad     = 0.10,
+  Ruido        = 0.20,
+  Tiempo       = 0.15,
+  Reserva      = 0.05,
+  Aparcamiento = 0.10
+)
+sum(w)  
+
+# Sentido: +1 = beneficio (+ = mejor), -1 = coste (- = mejor)
+sense <- c(
+  Precio = -1,
+  Valoracion = +1,
+  Variedad = +1,
+  Ruido = +1,
+  Tiempo = -1,
+  Reserva = +1,
+  Aparcamiento = +1
+)
+sense
+```
+
+```{r}
+## Paso 3: Normalización lineal a [0,1] según el sentido de cada criterio
+
+normalize01 <- function(x, s){
+  if (length(unique(x)) == 1) return(rep(1, length(x)))  
+  if (s == +1) {
+    (x - min(x)) / (max(x) - min(x))
+  } else {
+    (max(x) - x) / (max(x) - min(x))
+  }
+}
+
+Xn <- as.data.frame(mapply(normalize01, X, sense))
+row.names(Xn) <- row.names(X)
+
+round(Xn, 3)
+```
+
+```{r}
+## Paso 4: Matriz de concordancia C(a,b)
+
+A <- row.names(Xn)
+m <- nrow(Xn)
+
+C <- matrix(0, m, m, dimnames = list(A, A))
+
+for(i in 1:m){
+  for(j in 1:m){
+    if(i != j){
+      C[i,j] <- sum(w[Xn[i, ] >= Xn[j, ]])
+    }
+  }
+}
+
+round(C, 3)
+```
+
+```{r}
+## Paso 5: Elección de umbral α
+alpha <- 0.6
+
+## Paso 6: Matriz de sobreclasificación S(a,b)
+S <- (C >= alpha) * 1   # 1 si C(a,b) >= α, 0 si no
+diag(S) <- 0            # se excluyen autocomparaciones
+
+S
+```
+
+```{r}
+## Paso 7: Cálculo del núcleo ELECTRE
+
+# Una alternativa está dominada si alguien la sobreclasifica: S[j,i] == 1
+dominada <- apply(S, 2, function(col) any(col == 1))
+
+nucleo <- names(dominada[dominada == FALSE])
+nucleo
+
+```
+
+**Resultado ELECTRE I (α = 0.6).** Con los pesos fijados para ELECTRE (distintos a AHP) y tras normalizar los criterios (beneficio/coste), la relación de sobreclasificación conduce a un **núcleo formado por Azusal**. Es decir, **ninguna otra alternativa sobreclasifica a Azusal** con el nivel de exigencia α = 0.6. La razón es que, pese a un precio y tiempo menos favorables, **Azusal domina en los criterios más influyentes** del modelo (especialmente *Ruido/ambiente* y *Aparcamiento*, y mantiene buena *Valoración*), de modo que el conjunto ponderado de criterios en que Azusal no es peor que las demás supera el umbral requerido.  
+Este resultado es **coherente con AHP**, que también sitúa a Azusal como opción preferida; en ELECTRE la justificación es **no compensatoria** (umbral de concordancia), mientras que en AHP es **compensatoria** (agregación ponderada).
+
+
+# ELECTRE I: resumen y sensibilidad 
+
+```{r}
+# --- ELECTRE I: resumen y sensibilidad ---
+
+# (A) Mostrar matrices bien formateadas
+round(C, 2)
+S
+
+# (B) Núcleo ya calculado antes (en tu objeto 'nucleo')
+nucleo
+
+# (C) Sensibilidad del umbral α
+check_alpha <- function(alpha){
+  S2 <- (C >= alpha) * 1; diag(S2) <- 0
+  dominada2 <- apply(S2, 2, function(col) any(col == 1))
+  nucleo2 <- rownames(S2)[!dominada2]
+  list(alpha = alpha, nucleo = nucleo2)
+}
+
+sens_055 <- check_alpha(0.55)
+sens_065 <- check_alpha(0.65)
+sens_055
+sens_065
+```
+
+**Interpretación de ELECTRE I.**  
+Con el umbral α = 0.60, el **núcleo** del problema está formado por **Azusal**, lo que significa que **ninguna otra alternativa presenta una concordancia suficiente para sobreclasificarla**. En consecuencia, Azusal se considera la mejor opción según ELECTRE.
+
+Para analizar la **robustez** del resultado, se ha realizado un estudio de **sensibilidad** variando el nivel de exigencia α.  
+- Con **α = 0.55** (menos exigente), el núcleo sigue siendo **Azusal**, por lo que la recomendación **se mantiene**.  
+- Con **α = 0.65** (más exigente), el núcleo pasa a ser **{Azusal, Bar La Vía}**, lo que indica que **Bar La Vía se vuelve comparable** a Azusal cuando se requiere un consenso mayor entre criterios.
+
+Esto muestra que la decisión con ELECTRE es **razonablemente estable**, pero también que **el método es sensible al nivel de exigencia α**, lo cual es coherente con su naturaleza **no compensatoria**: para considerar que una alternativa “supera” a otra, debe ganar en un número suficiente de criterios ponderados, no basta con compensar beneficios con desventajas.
+
+En definitiva, **ELECTRE recomienda Azusal**, especialmente para valores de α en el rango habitual (0.55–0.60).
+
+
+# PROMETHEE II
+
+```{r}
+# Pesos
+w_pr <- c(
+  Precio       = 0.20,
+  Valoracion   = 0.20,
+  Variedad     = 0.10,
+  Ruido        = 0.20,
+  Tiempo       = 0.15,
+  Reserva      = 0.05,
+  Aparcamiento = 0.10
+)
+sum(w_pr)  
+
+```
+
+```{r}
+alts <- rownames(Xn)
+m <- nrow(Xn)
+
+Pi <- matrix(0, m, m, dimnames = list(alts, alts))
+
+for(a in alts){
+  for(b in alts){
+    if(a != b){
+      wins <- Xn[a, ] > Xn[b, ]    
+      Pi[a, b] <- sum(w_pr[wins])  
+    }
+  }
+}
+
+round(Pi, 3)
+``` 
+
+
+```{r}
+## Cálculo de flujos PROMETHEE II
+
+phi_plus  <- rowSums(Pi) / (nrow(Pi) - 1)   
+phi_minus <- colSums(Pi) / (nrow(Pi) - 1)  
+phi_net   <- phi_plus - phi_minus           
+
+res_prom <- data.frame(
+  Alternativa = rownames(Pi),
+  phi_plus = round(phi_plus, 4),
+  phi_minus = round(phi_minus, 4),
+  phi_net = round(phi_net, 4)
+)
+
+res_prom <- res_prom[order(-res_prom$phi_net), ]
+res_prom
+```
+
+
+**Resultado PROMETHEE II.**  
+El método PROMETHEE II proporciona un ranking completo basado en los flujos de preferencia.  
+La alternativa con mayor flujo neto es **Azusal** (ϕ = +0.0333), seguida por **La Boba** (ϕ = 0.0000).  
+**Bar La Vía** y **Bodeguita San Sebastián** presentan flujos netos negativos y se sitúan por detrás.
+
+La ventaja de **Azusal** proviene de que, en las comparaciones par a par, supera a la mayoría de alternativas en los criterios que tienen mayor peso en el modelo (especialmente **Ruido/ambiente**, **Aparcamiento** y **Valoración**).  
+A diferencia de AHP, PROMETHEE no compensa directamente desventajas con ventajas, sino que evalúa **victorias ponderadas criterio por criterio**, lo que refuerza la consistencia de la elección.
+
+En conclusión, **PROMETHEE II también recomienda Azusal** como mejor opción para la cena con amigos.
+
+
+# PROMETHEE I (orden parcial a partir de ϕ+ y ϕ-)
+
+```{r}
+alts <- res_prom$Alternativa
+phi_plus  <- setNames(res_prom$phi_plus,  alts)
+phi_minus <- setNames(res_prom$phi_minus, alts)
+
+rel <- matrix("", length(alts), length(alts), dimnames = list(alts, alts))
+for(a in alts){
+  for(b in alts){
+    if(a==b) next
+    # a ≻ b si phi+(a) ≥ phi+(b) y phi−(a) ≤ phi−(b) con al menos una desigualdad estricta
+    if( (phi_plus[a]  >  phi_plus[b]  && phi_minus[a] <= phi_minus[b]) ||
+        (phi_plus[a] >=  phi_plus[b]  && phi_minus[a]  < phi_minus[b]) ){
+      rel[a,b] <- "a≻b"
+    } else if (phi_plus[a]==phi_plus[b] && phi_minus[a]==phi_minus[b]) {
+      rel[a,b] <- "a~b"    # indiferencia
+    } else {
+      rel[a,b] <- "a∥b"    # incomparables (conflicto)
+    }
+  }
+}
+rel
+```
+
+
+**PROMETHEE I**  
+El análisis de los flujos saliente (ϕ⁺) y entrante (ϕ⁻) permite establecer un orden parcial entre las alternativas.  
+Se obtiene una única preferencia estricta: **Azusal > La Boba**, lo que indica que Azusal presenta simultáneamente un flujo saliente mayor y un flujo entrante menor que La Boba, por lo que se considera preferible a ella sin ambigüedad.  
+En cambio, los pares restantes resultan **incomparables (a∥b)**, ya que una alternativa mejora en ϕ⁺ pero empeora en ϕ⁻, generando conflicto entre criterios. Este fenómeno es característico de PROMETHEE I, donde **no se fuerza la compensación entre ventajas y desventajas**.
+
+
+**PROMETHEE II **  
+Al considerar el flujo neto **ϕ = ϕ⁺ - ϕ⁻**, se obtiene un ranking total:
+
+1. **Azusal**
+2. La Boba
+3. Bar La Vía
+4. Bodeguita San Sebastián
+
+La alternativa con mayor flujo neto es **Azusal**, por lo que es la mejor opción según PROMETHEE II.  
+Este resultado es **coherente con PROMETHEE I** (donde Azusal dominaba a La Boba) y con los métodos anteriores.
+
+
+
+# CONCLUSIÓN
+
+Se recomienda elegir **Azusal** para la cena con amigos, ya que es la opción que mejor equilibra la calidad de la experiencia (ambiente y valoración), la comodidad (aparcamiento y disponibilidad) y el bienestar del grupo, siendo consistentemente preferida por AHP, ELECTRE y PROMETHEE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
