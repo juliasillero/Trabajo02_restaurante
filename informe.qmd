@@ -1,45 +1,56 @@
 ---
 title: "Elección del mejor restaurante para una cena con amigos"
 author: "Julia Sillero"
-format: html
+date: today
+lang: es
+format:
+  pdf:
+    pdf-engine: xelatex
+    toc: true
+    number-sections: true
+    geometry:
+      - margin=2.5cm
+execute:
+  echo: false
+  warning: false
+  message: false
 ---
 
 # Introducción y objetivos
 
 **Objetivo:** elegir el mejor restaurante para una cena con amigos, empleando métodos de Decisión Multicriterio (AHP, ELECTRE y PROMETHEE).
 
-**Alternativas consideradas:**
-- La Boba
-- Bodeguita San Sebastián
-- Azusal
+**Alternativas consideradas:** 
+
+- La Boba  
+- Bodeguita San Sebastián  
+- Azusal  
 - Bar La Vía
 
 **Criterios y subcriterios utilizados (estructura jerárquica):**
 
-- **Precio** *(minimizar)*  
-  - Medición: ticket medio en euros por persona.
-
-- **Calidad de la comida** *(maximizar)*  
-  - **Valoración media** en Google/Tripadvisor *(escala 0–5)*  
-  - **Variedad del menú** *(escala 1–5)*  
-    - 1 = menú muy limitado  
-    - 3 = variedad moderada  
-    - 5 = oferta amplia y diversa  
-
-- **Experiencia en el local** *(maximizar)*  
-  - **Ruido/ambiente** *(escala 1–5, donde 1 = muy ruidoso y 5 = ambiente agradable/tranquilo)*  
-  - **Tiempo de servicio** *(minimizar, minutos hasta recibir plato principal)*  
-  - **Facilidad de reserva para grupo** *(escala 1–5, donde 1 = difícil y 5 = muy fácil)*  
-
-- **Accesibilidad para aparcar** *(maximizar)*  
-  - Escala 1–5  
-    - 1 = muy difícil aparcar en la zona  
-    - 3 = se puede aparcar pero con espera  
-    - 5 = muy fácil aparcar cerca del local
+-   **Precio** *(minimizar)*
+    -   Medición: ticket medio en euros por persona.
+-   **Calidad de la comida** *(maximizar)*
+    -   **Valoración media** en Google/Tripadvisor *(escala 0–5)*\
+    -   **Variedad del menú** *(escala 1–5)*
+        -   1 = menú muy limitado\
+        -   3 = variedad moderada\
+        -   5 = oferta amplia y diversa
+-   **Experiencia en el local** *(maximizar)*
+    -   **Ruido/ambiente** *(escala 1–5, donde 1 = muy ruidoso y 5 = ambiente agradable/tranquilo)*\
+    -   **Tiempo de servicio** *(minimizar, minutos hasta recibir plato principal)*\
+    -   **Facilidad de reserva para grupo** *(escala 1–5, donde 1 = difícil y 5 = muy fácil)*
+-   **Accesibilidad para aparcar** *(maximizar)*
+    -   Escala 1–5
+        -   1 = muy difícil aparcar en la zona\
+        -   3 = se puede aparcar pero con espera\
+        -   5 = muy fácil aparcar cerca del local
 
 Este conjunto de criterios recoge tanto aspectos económicos (precio), como gastronómicos (calidad y variedad), de experiencia durante la cena (ambiente, tiempo de espera y reservas) y logísticos (accesibilidad en coche). Por tanto, resulta adecuado para una decisión grupal realista sobre dónde cenar.
 
 # Datos y criterios
+
 ```{r}
 # (1) Defino la tabla con los valores usados en el trabajo
 df <- data.frame(
@@ -61,28 +72,28 @@ datos <- read.csv("datos_restaurantes.csv", stringsAsFactors = FALSE)
 datos
 ```
 
-**Escalas y sentido de los criterios.**  
-Se emplean los siguientes criterios y escalas: Precio (€) y Tiempo (min) son criterios de **coste** (menos es mejor). Valoración (0–5), Variedad (1–5), Ruido/ambiente (1–5, donde valores altos significan local más **tranquilo**), Reserva (1–5) y Aparcamiento (1–5) son criterios de **beneficio** (más es mejor).  
-Los datos proceden de estimaciones razonables (precios medios y tiempos habituales) y de valoraciones públicas (Google/Maps), ajustadas a una escala común para su comparación multicriterio.
+**Escalas y sentido de los criterios.**\
+Se emplean los siguientes criterios y escalas: Precio (€) y Tiempo (min) son criterios de **coste** (menos es mejor). Valoración (0–5), Variedad (1–5), Ruido/ambiente (1–5, valores altos indican un ambiente más **tranquilo**), Reserva (1–5) y Aparcamiento (1–5) son criterios de **beneficio** (más es mejor).\
+Los datos proceden de estimaciones razonables (precios medios y tiempos habituales) y de valoraciones públicas (Google Maps), ajustadas a una escala común que permite su comparación multicriterio.
 
 # AHP: Análisis Jerárquico del Proceso
 
 La estructura jerárquica utilizada es la siguiente:
 
-- **Objetivo:** Elegir el mejor restaurante para una cena con amigos.
-- **Criterios principales:**
-  1. **Precio** (minimizar)
-  2. **Calidad**
-     - Valoración media (escala 0–5)
-     - Variedad del menú (escala 1–5)
-  3. **Experiencia en el local**
-     - Ruido/ambiente (escala 1–5)
-     - Tiempo de servicio (minutos)
-     - Facilidad de reserva para grupos (escala 1–5)
-  4. **Aparcamiento** (escala 1–5, cuanto mayor, más fácil)
-  
-  
+-   **Objetivo:** Elegir el mejor restaurante para una cena con amigos.
+-   **Criterios principales:**
+    1.  **Precio** (minimizar)
+    2.  **Calidad**
+        -   Valoración media (escala 0–5)
+        -   Variedad del menú (escala 1–5)
+    3.  **Experiencia en el local**
+        -   Ruido/ambiente (escala 1–5)
+        -   Tiempo de servicio (minutos)
+        -   Facilidad de reserva para grupos (escala 1–5)
+    4.  **Aparcamiento** (escala 1–5, cuanto mayor, más fácil)
+
 # Matriz de comparación por pares - Criterios principales
+
 ```{r}
 criterios <- matrix(c(
   1,   3,   5,   7,
@@ -119,7 +130,7 @@ En segundo lugar aparece la **Calidad de la comida** (≈30%), lo cual confirma 
 
 El **Precio** tiene un peso menor (≈10%), lo que sugiere que el grupo está dispuesto a pagar un poco más si el lugar ofrece una buena experiencia. Por último, la **Facilidad de aparcamiento** resulta ser el criterio menos determinante (≈5%), probablemente porque existen alternativas de transporte o porque se considera algo secundario.
 
-El **Índice de Consistencia** obtenido (CR ≈ 0.08) es **inferior al umbral recomendado de 0.10**, por lo que la matriz de comparación es **consistente** y los juicios emitidos son coherentes.
+El **Índice de Consistencia** obtenido (CR ≈ 0.08) es **inferior al umbral recomendado de 0.10**, por lo que la matriz de comparación es **consistente**, y los juicios emitidos son coherentes.
 
 # Matriz de comparación por pares - Subcriterios de Calidad
 
@@ -148,13 +159,13 @@ CR_calidad <- 0
 CR_calidad
 ```
 
-
 # Matriz de comparación por pares - Subcriterios de Experiencia
+
 **Juicios dados:** (aplicados para construir la matriz)
 
-- Ruido vs Tiempo = 5 (el ruido se considera más importante que el tiempo de espera)
-- Ruido vs Reserva = 3 (un ambiente más agradable se valora moderadamente más que la facilidad de reserva)
-- Tiempo vs Reserva = 1/2 (es ligeramente más importante poder reservar que reducir el tiempo de servicio)
+-   Ruido vs Tiempo = 5 (el ruido se considera más importante que el tiempo de espera)
+-   Ruido vs Reserva = 3 (un ambiente más agradable se valora moderadamente más que la facilidad de reserva)
+-   Tiempo vs Reserva = 1/2 (es ligeramente más importante poder reservar que reducir el tiempo de servicio)
 
 ```{r}
 experiencia <- matrix(c(
@@ -182,7 +193,6 @@ RI <- 0.58
 CR_experiencia <- CI / RI
 CR_experiencia
 ```
-
 
 ```{r}
 # Pesos de criterios principales:
@@ -248,14 +258,13 @@ tabla_global
 
 Los pesos globales muestran la importancia final de cada criterio específico en la decisión:
 
-- **Ruido/ambiente** es el criterio más relevante (≈0.34). Esto confirma que para el grupo es fundamental que el lugar sea cómodo para conversar y disfrutar de la cena.
-- La **Valoración media** del restaurante (≈0.25) ocupa el segundo lugar, lo que indica que la opinión general de otros clientes influye notablemente en la decisión.
-- El **Tiempo de servicio** (≈0.16) también tiene un peso apreciable, mostrando preferencia por locales en los que la atención es ágil.
-- El **Precio** (≈0.10) tiene importancia, aunque menor, lo que sugiere que el grupo está dispuesto a pagar algo más si la experiencia lo merece.
-- Tanto la **Facilidad de aparcamiento** (≈0.05), la **Facilidad de reserva** (≈0.05) y la **Variedad del menú** (≈0.05) tienen pesos reducidos, lo que indica que estos factores influyen menos en la decisión final.
+-   **Ruido/ambiente** es el criterio más relevante (≈0.34). Esto confirma que para el grupo es fundamental que el lugar sea cómodo para conversar y disfrutar de la cena.
+-   La **Valoración media** del restaurante (≈0.25) ocupa el segundo lugar, lo que indica que la opinión general de otros clientes influye notablemente en la decisión.
+-   El **Tiempo de servicio** (≈0.16) también tiene un peso apreciable, mostrando preferencia por locales en los que la atención es ágil.
+-   El **Precio** (≈0.10) tiene importancia, aunque menor, lo que sugiere que el grupo está dispuesto a pagar algo más si la experiencia lo merece.
+-   Tanto la **Facilidad de aparcamiento** (≈0.05), la **Facilidad de reserva** (≈0.05) y la **Variedad del menú** (≈0.05) tienen pesos reducidos, lo que indica que estos factores influyen menos en la decisión final.
 
-En conjunto, el modelo AHP refleja que la elección del restaurante se basa principalmente en ofrecer una **buena experiencia social y gastronómica**, más que en factores puramente económicos o logísticos.
-
+En conjunto, el modelo AHP refleja que la elección del restaurante se basa principalmente en la búsqueda de una **buena experiencia social y gastronómica**, más que en factores puramente económicos o logísticos.
 
 # AHP sobre las alternativas para el criterio: RUIDO (menos es mejor)
 
@@ -309,12 +318,11 @@ CR_ruido
 
 ### Interpretación del criterio Ruido
 
-En el criterio *Ruido/ambiente* (a menor ruido, mejor), Azusal es claramente la alternativa más preferida (≈0.63), lo que indica que es el local más adecuado para mantener una conversación cómoda durante la cena. 
+En el criterio *Ruido/ambiente* (a menor ruido, mejor), Azusal es claramente la alternativa más preferida (≈0.63), lo que indica que es el local más adecuado para mantener una conversación cómoda durante la cena.
 
 La Boba y Bodeguita San Sebastián presentan niveles de tranquilidad similares (≈0.15), situándose en un nivel intermedio. Por su parte, Bar La Vía es la opción menos recomendable en términos de ambiente acústico (≈0.06), probablemente porque es más concurrido o ruidoso.
 
 El índice de consistencia obtenido (CR ≈ 0.03) es **inferior a 0.10**, por lo que la matriz es **consistente** y los juicios son coherentes.
-
 
 # AHP para el criterio: VALORACIÓN (0–5, más es mejor)
 
@@ -351,14 +359,14 @@ CR_val
 
 ### Interpretación del criterio Valoración
 
-Para este criterio (0–5, a mayor mejor) se construyó una matriz de cocientes a partir de las valoraciones medias publicadas en Google Maps. Al ser una matriz perfectamente consistente, el **CR ≈ 0**, por lo que los resultados son totalmente coherentes con los datos observados.
+Para este criterio (0–5, a mayor mejor) se construyó una matriz de cocientes a partir de las valoraciones medias publicadas en Google Maps. Al ser una matriz perfectamente consistente, el **CR ≈ 0**, por lo que los resultados son totalmente coherentes con los datos observados y es perfectamente consistente.
 
-Los pesos obtenidos reflejan diferencias **muy pequeñas** entre alternativas: **Azusal** presenta la mayor preferencia (≈0.2556), seguido muy de cerca por **Bodeguita San Sebastián** (≈0.2500) y **Bar La Vía** (≈0.2500), y después **La Boba** (≈0.2444). Esta proximidad es lógica porque las puntuaciones de partida (4.6, 4.5, 4.5 y 4.4) son muy parecidas. 
+Los pesos obtenidos reflejan diferencias **muy pequeñas** entre alternativas: **Azusal** presenta la mayor preferencia (≈0.2556), seguido muy de cerca por **Bodeguita San Sebastián** (≈0.2500) y **Bar La Vía** (≈0.2500), y después **La Boba** (≈0.2444). Esta proximidad es lógica porque las puntuaciones de partida (4.6, 4.5, 4.5 y 4.4) son muy parecidas.
 
 **Lectura práctica:** en términos de valoración agregada de clientes, *Azusal* destaca ligeramente, pero las cuatro opciones resultan bien valoradas; por sí solo, este criterio **no** discrimina de forma contundente la decisión final.
 
-
 # AHP para el criterio: TIEMPO (COSTE: menos es mejor)
+
 ```{r}
 alts <- c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía")
 
@@ -391,13 +399,12 @@ CR_tiempo
 
 ```
 
-
 ### Interpretación del criterio Tiempo
 
-En este criterio (menor tiempo de servicio es mejor), **La Boba** es la alternativa más ventajosa, con un peso aproximado de 0.43, lo que refleja que su rapidez de atención es notablemente superior. **Bodeguita San Sebastián** y **Bar La Vía** presentan tiempos moderados (≈0.21 cada una), siendo opciones aceptables. **Azusal** muestra el servicio más lento (≈0.14), por lo que resulta menos conveniente en este aspecto. El índice de consistencia es prácticamente cero (CR ≈ 0), lo que indica que la comparación es totalmente coherente.
-
+En este criterio (menor tiempo de servicio es mejor), **La Boba** es la alternativa más ventajosa, con un peso aproximado de 0.43, lo que refleja que su rapidez de atención es notablemente superior. **Bodeguita San Sebastián** y **Bar La Vía** presentan tiempos moderados (≈0.21 cada una), siendo opciones aceptables. **Azusal** muestra el servicio más lento (≈0.14), por lo que resulta menos conveniente en este aspecto. El índice de consistencia es prácticamente cero (CR ≈ 0), lo que indica que la comparación es perfectamente consistente.
 
 # AHP para PRECIO (€ por persona) — COSTE: menor es mejor
+
 ```{r}
 alts <- c("La Boba","Bodeguita San Sebastián","Azusal","Bar La Vía")
 
@@ -426,7 +433,6 @@ round(w_precio, 4); CR_precio
 ### Interpretación del criterio Precio
 
 Este criterio se ha tratado como un criterio de coste (menor = mejor). A partir de los precios medios estimados por persona se obtuvo una matriz perfectamente consistente (CR = 0). Los pesos reflejan que **La Boba** es la alternativa más ventajosa en cuanto a precio (≈ 0.35), seguida de **Bar La Vía** (≈ 0.28) y **Bodeguita San Sebastián** (≈ 0.23). Por su parte, **Azusal** resulta la opción menos favorable en este criterio (≈ 0.14), debido a su mayor coste medio. Por tanto, el precio distingue claramente entre las alternativas, penalizando especialmente a Azusal.
-
 
 # AHP para el criterio: RESERVA (1–5, mayor = mejor)
 
@@ -461,10 +467,9 @@ round(w_reserva, 4)
 CR_reserva
 ```
 
-
 ### Interpretación del criterio Reserva
 
-En este criterio (mayor facilidad de reserva = mejor), **Bodeguita San Sebastián** destaca claramente como la alternativa más favorable (≈0.45), siendo el local donde resulta más sencillo asegurar mesa para un grupo. A continuación aparece **Azusal** (≈0.27), seguido de **La Boba** (≈0.18). **Bar La Vía** presenta la peor disponibilidad para reservas (≈0.09). El índice de consistencia es prácticamente nulo (CR ≈ 0), lo que indica que la comparación es completamente coherente.
+En este criterio (mayor facilidad de reserva = mejor), **Bodeguita San Sebastián** destaca claramente como la alternativa más favorable (≈0.45), siendo el local donde resulta más sencillo asegurar mesa para un grupo. A continuación aparece **Azusal** (≈0.27), seguido de **La Boba** (≈0.18). **Bar La Vía** presenta la peor disponibilidad para reservas (≈0.09). El índice de consistencia es prácticamente nulo (CR ≈ 0), lo que indica que la comparación es completamente coherente y perfectamente consistente.
 
 # AHP para el criterio: VARIEDAD (1–5, mayor = mejor)
 
@@ -500,7 +505,6 @@ CR_variedad
 
 ```
 
-
 ### Interpretación del criterio Variedad
 
 En este criterio (mayor variedad del menú = mejor), **Bar La Vía** destaca claramente como la alternativa con la oferta más amplia y diversa (≈0.45). Le sigue **Bodeguita San Sebastián** (≈0.27), con una variedad moderada. **La Boba** presenta una carta más limitada (≈0.18), y **Azusal** es la opción con menor variedad disponible (≈0.09). La consistencia es perfecta (CR = 0), lo que confirma que la comparación está completamente alineada con los valores asignados.
@@ -533,10 +537,9 @@ round(w_aparc, 4); CR_aparc
 
 ```
 
-
 ### Interpretación del criterio Aparcamiento
 
-En este criterio (mayor facilidad para aparcar = mejor), **Azusal** y **Bar La Vía** aparecen como las alternativas más favorables (≈0.36 cada una), indicando que ambos locales ofrecen buena disponibilidad de aparcamiento en la zona. **Bodeguita San Sebastián** se sitúa en una posición intermedia (≈0.21), mientras que **La Boba** presenta la peor accesibilidad en coche (≈0.07). El índice de consistencia es prácticamente nulo (CR ≈ 0), lo que confirma que la comparación es completamente coherente.
+En este criterio (mayor facilidad para aparcar = mejor), **Azusal** y **Bar La Vía** aparecen como las alternativas más favorables (≈0.36 cada una), indicando que ambos locales ofrecen buena disponibilidad de aparcamiento en la zona. **Bodeguita San Sebastián** se sitúa en una posición intermedia (≈0.21), mientras que **La Boba** presenta la peor accesibilidad en coche (≈0.07). El índice de consistencia es prácticamente nulo (CR ≈ 0), lo que confirma que la comparación es completamente coherente y perfectamente consistente.
 
 # Agregación final AHP
 
@@ -573,7 +576,7 @@ round(ranking_ahp, 4)
 
 ### Conclusión AHP sobre las alternativas
 
-El ranking AHP sitúa a **Azusal** como la mejor opción (≈0.35). Su posición se explica porque sobresale en los criterios con mayor peso global (especialmente **Ruido/ambiente** y **Aparcamiento**) y mantiene buenas valoraciones. **La Boba** queda segunda (≈0.24), impulsada por sus resultados sobresalientes en **Tiempo** y **Precio**. **Bodeguita San Sebastián** (≈0.22) destaca en **Reserva** y Variedad moderada, pero no compensa lo suficiente en los criterios más determinantes. **Bar La Vía** (≈0.19) queda última: aunque es fuerte en **Variedad** y **Aparcamiento**, su peor desempeño en **Ruido** y **Tiempo** lastra la puntuación global.
+El ranking AHP sitúa a **Azusal** como la mejor opción (≈0.35). Su posición se explica porque sobresale en los criterios con mayor peso global (especialmente **Ruido/ambiente** y **Aparcamiento**) y mantiene buenas valoraciones. **La Boba** queda segunda (≈0.24), impulsada por sus resultados sobresalientes en **Tiempo** y **Precio**. **Bodeguita San Sebastián** (≈0.22) destaca en **Reserva** y Variedad moderada, pero no compensa lo suficiente en los criterios más determinantes. **Bar La Vía** (≈0.19) queda última: aunque es fuerte en **Variedad** y **Aparcamiento**, su peor desempeño en **Ruido** y **Tiempo** reduce la puntuación global.
 
 # Método ELECTRE I
 
@@ -675,11 +678,10 @@ nucleo
 
 ```
 
-**Resultado ELECTRE I (α = 0.6).** Con los pesos fijados para ELECTRE (distintos a AHP) y tras normalizar los criterios (beneficio/coste), la relación de sobreclasificación conduce a un **núcleo formado por Azusal**. Es decir, **ninguna otra alternativa sobreclasifica a Azusal** con el nivel de exigencia α = 0.6. La razón es que, pese a un precio y tiempo menos favorables, **Azusal domina en los criterios más influyentes** del modelo (especialmente *Ruido/ambiente* y *Aparcamiento*, y mantiene buena *Valoración*), de modo que el conjunto ponderado de criterios en que Azusal no es peor que las demás supera el umbral requerido.  
+**Resultado ELECTRE I (α = 0.6).** Con los pesos fijados para ELECTRE (distintos a AHP) y tras normalizar los criterios (beneficio/coste), la relación de sobreclasificación conduce a un **núcleo formado por Azusal**. Es decir, **ninguna otra alternativa sobreclasifica a Azusal** con el nivel de exigencia α = 0.6. La razón es que, pese a un precio y tiempo menos favorables, **Azusal domina en los criterios más influyentes** del modelo (especialmente *Ruido/ambiente* y *Aparcamiento*, y mantiene buena *Valoración*), de modo que el conjunto ponderado de criterios en que Azusal no es peor que las demás supera el umbral requerido.\
 Este resultado es **coherente con AHP**, que también sitúa a Azusal como opción preferida; en ELECTRE la justificación es **no compensatoria** (umbral de concordancia), mientras que en AHP es **compensatoria** (agregación ponderada).
 
-
-# ELECTRE I: resumen y sensibilidad 
+# ELECTRE I: resumen y sensibilidad
 
 ```{r}
 # --- ELECTRE I: resumen y sensibilidad ---
@@ -705,17 +707,16 @@ sens_055
 sens_065
 ```
 
-**Interpretación de ELECTRE I.**  
+**Interpretación de ELECTRE I.**\
 Con el umbral α = 0.60, el **núcleo** del problema está formado por **Azusal**, lo que significa que **ninguna otra alternativa presenta una concordancia suficiente para sobreclasificarla**. En consecuencia, Azusal se considera la mejor opción según ELECTRE.
 
-Para analizar la **robustez** del resultado, se ha realizado un estudio de **sensibilidad** variando el nivel de exigencia α.  
-- Con **α = 0.55** (menos exigente), el núcleo sigue siendo **Azusal**, por lo que la recomendación **se mantiene**.  
+Para analizar la **robustez** del resultado, se ha realizado un estudio de **sensibilidad** variando el nivel de exigencia α.\
+- Con **α = 0.55** (menos exigente), el núcleo sigue siendo **Azusal**, por lo que la recomendación **se mantiene**.\
 - Con **α = 0.65** (más exigente), el núcleo pasa a ser **{Azusal, Bar La Vía}**, lo que indica que **Bar La Vía se vuelve comparable** a Azusal cuando se requiere un consenso mayor entre criterios.
 
 Esto muestra que la decisión con ELECTRE es **razonablemente estable**, pero también que **el método es sensible al nivel de exigencia α**, lo cual es coherente con su naturaleza **no compensatoria**: para considerar que una alternativa “supera” a otra, debe ganar en un número suficiente de criterios ponderados, no basta con compensar beneficios con desventajas.
 
 En definitiva, **ELECTRE recomienda Azusal**, especialmente para valores de α en el rango habitual (0.55–0.60).
-
 
 # PROMETHEE II
 
@@ -750,8 +751,7 @@ for(a in alts){
 }
 
 round(Pi, 3)
-``` 
-
+```
 
 ```{r}
 ## Cálculo de flujos PROMETHEE II
@@ -771,17 +771,15 @@ res_prom <- res_prom[order(-res_prom$phi_net), ]
 res_prom
 ```
 
-
-**Resultado PROMETHEE II.**  
-El método PROMETHEE II proporciona un ranking completo basado en los flujos de preferencia.  
-La alternativa con mayor flujo neto es **Azusal** (ϕ = +0.0333), seguida por **La Boba** (ϕ = 0.0000).  
+**Resultado PROMETHEE II.**\
+El método PROMETHEE II proporciona un ranking completo basado en los flujos de preferencia.\
+La alternativa con mayor flujo neto es **Azusal** (ϕ = +0.0333), seguida por **La Boba** (ϕ = 0.0000).\
 **Bar La Vía** y **Bodeguita San Sebastián** presentan flujos netos negativos y se sitúan por detrás.
 
-La ventaja de **Azusal** proviene de que, en las comparaciones par a par, supera a la mayoría de alternativas en los criterios que tienen mayor peso en el modelo (especialmente **Ruido/ambiente**, **Aparcamiento** y **Valoración**).  
+La ventaja de **Azusal** proviene de que, en las comparaciones par a par, supera a la mayoría de alternativas en los criterios que tienen mayor peso en el modelo (especialmente **Ruido/ambiente**, **Aparcamiento** y **Valoración**).\
 A diferencia de AHP, PROMETHEE no compensa directamente desventajas con ventajas, sino que evalúa **victorias ponderadas criterio por criterio**, lo que refuerza la consistencia de la elección.
 
 En conclusión, **PROMETHEE II también recomienda Azusal** como mejor opción para la cena con amigos.
-
 
 # PROMETHEE I (orden parcial a partir de ϕ+ y ϕ-)
 
@@ -808,63 +806,22 @@ for(a in alts){
 rel
 ```
 
-
-**PROMETHEE I**  
-El análisis de los flujos saliente (ϕ⁺) y entrante (ϕ⁻) permite establecer un orden parcial entre las alternativas.  
-Se obtiene una única preferencia estricta: **Azusal > La Boba**, lo que indica que Azusal presenta simultáneamente un flujo saliente mayor y un flujo entrante menor que La Boba, por lo que se considera preferible a ella sin ambigüedad.  
+**PROMETHEE I**\
+El análisis de los flujos saliente (ϕ⁺) y entrante (ϕ⁻) permite establecer un orden parcial entre las alternativas.\
+Se obtiene una única preferencia estricta: **Azusal \> La Boba**, lo que indica que Azusal presenta simultáneamente un flujo saliente mayor y un flujo entrante menor que La Boba, por lo que se considera preferible a ella sin ambigüedad.\
 En cambio, los pares restantes resultan **incomparables (a∥b)**, ya que una alternativa mejora en ϕ⁺ pero empeora en ϕ⁻, generando conflicto entre criterios. Este fenómeno es característico de PROMETHEE I, donde **no se fuerza la compensación entre ventajas y desventajas**.
 
-
-**PROMETHEE II **  
+**PROMETHEE II** \
 Al considerar el flujo neto **ϕ = ϕ⁺ - ϕ⁻**, se obtiene un ranking total:
 
-1. **Azusal**
-2. La Boba
-3. Bar La Vía
-4. Bodeguita San Sebastián
+1.  **Azusal**
+2.  La Boba
+3.  Bar La Vía
+4.  Bodeguita San Sebastián
 
-La alternativa con mayor flujo neto es **Azusal**, por lo que es la mejor opción según PROMETHEE II.  
+La alternativa con mayor flujo neto es **Azusal**, por lo que es la mejor opción según PROMETHEE II.\
 Este resultado es **coherente con PROMETHEE I** (donde Azusal dominaba a La Boba) y con los métodos anteriores.
-
-
 
 # CONCLUSIÓN
 
 Se recomienda elegir **Azusal** para la cena con amigos, ya que es la opción que mejor equilibra la calidad de la experiencia (ambiente y valoración), la comodidad (aparcamiento y disponibilidad) y el bienestar del grupo, siendo consistentemente preferida por AHP, ELECTRE y PROMETHEE.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
